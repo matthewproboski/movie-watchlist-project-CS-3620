@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Movie Watchlist App</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 20px; line-height: 1.6; }
+        nav { background: #333; padding: 10px; margin-bottom: 20px; }
+        nav a { color: white; margin-right: 15px; text-decoration: none; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #f4f4f4; }
+        .container { max-width: 800px; margin: auto; }
+        .flash-msg { background: #ffdddd; padding: 10px; border: 1px solid red; }
+    </style>
+</head>
+<body>
+        
+    <nav>
+        <a href="/">Home</a>
+        
+        <!-- check if user is logged in -->
+        {% if session.get('user_id') %}
+            <span style="color: #aaa; margin-right: 15px;">Hello, {{ session['email'] }}</span>
+            <a href="/logout">Logout</a>
+        {% else %}
+            <a href="/login">Login</a>
+            <a href="/signup">Sign Up</a>
+        {% endif %}
+    </nav>
+
+  
+
+    <div class="container">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="flash-msg">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+</body>
+</html>

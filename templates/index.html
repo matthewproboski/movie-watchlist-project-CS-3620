@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+
+{% block content %}
+    <h1>Welcome to the Watchlist App</h1>
+    
+    <h2>Database Connection Test</h2>
+    <p>If you see a list of movies below, your Python app is successfully talking to MySQL!</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Year</th>
+                <th>Type</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- loop through data -->
+            {% for movie in movies %}
+            <tr>
+                <td>{{ movie.content_id }}</td>
+                <td>{{ movie.title }}</td>
+                <td>{{ movie.release_year }}</td>
+                <td>{{ movie.content_type }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
