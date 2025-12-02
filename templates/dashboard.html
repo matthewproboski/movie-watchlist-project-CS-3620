@@ -1,0 +1,50 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1>My Dashboard</h1>
+
+<div style="display: flex; gap: 20px;">
+    
+    <!-- watchlist -->
+    <div style="flex: 1;">
+        <h2>My Watchlist</h2>
+        {% if watchlist %}
+            <table>
+                <tr><th>Title</th><th>Type</th><th>Action</th></tr>
+                {% for item in watchlist %}
+                <tr>
+                    <td>{{ item.title }}</td>
+                    <td>{{ item.content_type }}</td>
+                    <td>
+                        <form action="/watchlist/remove/{{ item.content_id }}" method="POST">
+                            <button type="submit" style="background:red; color:white;">Remove</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <p>Your watchlist is empty.</p>
+        {% endif %}
+    </div>
+
+    <!-- ratings -->
+    <div style="flex: 1;">
+        <h2>My Ratings History</h2>
+        {% if my_ratings %}
+            <table>
+                <tr><th>Title</th><th>Rating</th><th>Date</th></tr>
+                {% for rate in my_ratings %}
+                <tr>
+                    <td>{{ rate.title }}</td>
+                    <td>{{ rate.rating }}</td>
+                    <td>{{ rate.created_at.strftime('%Y-%m-%d') }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <p>You haven't rated anything yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

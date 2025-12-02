@@ -4,7 +4,6 @@
     <h1>Welcome to the Watchlist App</h1>
     
     <h2>Database Connection Test</h2>
-    <p>If you see a list of movies below, your Python app is successfully talking to MySQL!</p>
 
     <table>
         <thead>
@@ -13,16 +12,35 @@
                 <th>Title</th>
                 <th>Year</th>
                 <th>Type</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
-            <!-- loop through data -->
             {% for movie in movies %}
             <tr>
                 <td>{{ movie.content_id }}</td>
                 <td>{{ movie.title }}</td>
                 <td>{{ movie.release_year }}</td>
                 <td>{{ movie.content_type }}</td>
+                <td>
+                    {% if session.get('user_id') %}
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            
+                            <!-- watchlist button -->
+                            <form action="/watchlist/add/{{ movie.content_id }}" method="POST">
+                                <button type="submit">+ Watch</button>
+                            </form>
+
+                            <!-- rating form -->
+                            <form action="/rate/{{ movie.content_id }}" method="POST" style="display: flex;">
+                                <input type="number" name="rating" step="0.1" min="1" max="5" placeholder="1-5" style="width: 50px;" required>
+                                <button type="submit">Rate</button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <small>Login to interact</small>
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>
