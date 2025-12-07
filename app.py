@@ -34,17 +34,59 @@ def get_db_connection():
 @app.route('/')
 def index():
     conn = get_db_connection()
+    if not conn:
+        return "Database connection failed", 500
     cursor = conn.cursor(dictionary=True)
 
-    # just a test query
-    query = "SELECT * FROM content WHERE content_type = 'Movie' LIMIT 5;"
-    cursor.execute(query)
-    movies = cursor.fetchall()
+    # analytical view 2 -> top rated content leaderboard
+    leaderboard_query = """
+        SELECT 
+            c.content_id,
+            c.title,
+            c.release_year,
+            c.content_type,
+            COALESCE(AVG(r.rating), 0) AS avg_rating,
+            COUNT(r.rating) AS num_ratings
+        FROM 
+            content c
+        LEFT JOIN 
+            user_ratings r ON c.content_id = r.content_id
+        GROUP BY 
+            c.content_id, c.title, c.release_year, c.content_type
+        HAVING 
+            COUNT(r.rating) > 0
+        ORDER BY 
+            avg_rating DESC, num_ratings DESC
+        LIMIT 10;
+    """
+    cursor.execute(leaderboard_query)
+    top_content = cursor.fetchall()
+
+    # analytical view 3: recent oscar winners
+    awards_query = """
+        SELECT 
+            c.content_id,
+            c.title,
+            c.release_year,
+            a.year AS award_year,
+            a.category
+        FROM 
+            content c
+        JOIN 
+            awards a ON c.content_id = a.content_id
+        ORDER BY 
+            a.year DESC
+        LIMIT 10;
+    """
+    cursor.execute(awards_query)
+    award_winners = cursor.fetchall()
 
     cursor.close()
     conn.close()
 
-    return render_template('index.html', movies=movies)
+    return render_template('index.html', 
+                           top_content=top_content, 
+                           award_winners=award_winners)
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -225,10 +267,64 @@ def dashboard():
     cursor.execute(ratings_query, (session['user_id'],))
     my_ratings = cursor.fetchall()
 
+    # analytical view #1: my states
+    # total items in watchlist using COUNT()
+    stats_watchlist_query = """
+        SELECT COUNT(*) as total_count 
+        FROM user_watchlist 
+        WHERE user_id = %s
+    """
+    cursor.execute(stats_watchlist_query, (session['user_id'],))
+    watchlist_count = cursor.fetchone()['total_count']
+
+    # average rating using AVG()
+    # COALESCE() handles NULLs
+    stats_rating_query = """
+        SELECT COALESCE(AVG(rating), 0) as average_rating 
+        FROM user_ratings 
+        WHERE user_id = %s
+    """
+    cursor.execute(stats_rating_query, (session['user_id'],))
+    avg_rating = cursor.fetchone()['average_rating']
+    
+    # round it
+    avg_rating = round(float(avg_rating), 1)
+
     cursor.close()
     conn.close()
     
-    return render_template('dashboard.html', watchlist=watchlist, my_ratings=my_ratings)
+    return render_template('dashboard.html', 
+                           watchlist=watchlist, 
+                           my_ratings=my_ratings,
+                           watchlist_count=watchlist_count,
+                           avg_rating=avg_rating)
+
+@app.route('/search')
+def search():
+    # get the search query
+    search_query = request.args.get('query', '').strip()
+    
+    if search_query:
+        conn = get_db_connection()
+        if not conn:
+            return "Database connection failed", 500
+        cursor = conn.cursor(dictionary=True)
+
+        sql_query = """
+            SELECT content_id, title, release_year, content_type
+            FROM content 
+            WHERE MATCH(title, overview) AGAINST(%s IN NATURAL LANGUAGE MODE)
+            LIMIT 50;
+        """
+        cursor.execute(sql_query, (search_query,))
+        results = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return render_template('search.html', results=results, search_query=search_query)
+
+    return render_template('search.html')
 
 if __name__ == '__main__':
     # check command line arguments

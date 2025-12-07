@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+
+{% block content %}
+    <h1>Search for Movies & TV Shows</h1>
+
+    <form method="GET" action="/search">
+        <input type="text" name="query" placeholder="Search by title or keyword..." value="{{ search_query or '' }}" style="width: 300px; padding: 5px;">
+        <button type="submit">Search</button>
+    </form>
+
+    {% if results is defined %}
+        {% if results %}
+            <p>Found {{ results|length }} result(s) for '{{ search_query }}'.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Year</th>
+                        <th>Type</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in results %}
+                    <tr>
+                        <td>{{ item.title }}</td>
+                        <td>{{ item.release_year }}</td>
+                        <td>{{ item.content_type }}</td>
+                        <td>
+                            {% if session.get('user_id') %}
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <form action="/watchlist/add/{{ item.content_id }}" method="POST">
+                                        <button type="submit">+ Watch</button>
+                                    </form>
+                                    <form action="/rate/{{ item.content_id }}" method="POST" style="display: flex;">
+                                        <input type="number" name="rating" step="0.1" min="1" max="5" placeholder="1-5" style="width: 50px;" required>
+                                        <button type="submit">Rate</button>
+                                    </form>
+                                </div>
+                            {% else %}
+                                <small>Login to interact</small>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No results found for '{{ search_query }}'.</p>
+        {% endif %}
+    {% endif %}
+
+{% endblock %}

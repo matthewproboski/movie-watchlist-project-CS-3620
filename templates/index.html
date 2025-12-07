@@ -2,37 +2,34 @@
 
 {% block content %}
     <h1>Welcome to the Watchlist App</h1>
-    
-    <h2>Database Connection Test</h2>
-
+       
+    <h2>Top 10 Rated Movies & TV Shows</h2>
     <table>
         <thead>
             <tr>
-                <th>ID</th>
                 <th>Title</th>
                 <th>Year</th>
                 <th>Type</th>
+                <th>Avg. Rating</th>
+                <th># of Ratings</th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody>
-            {% for movie in movies %}
+            {% for item in top_content %}
             <tr>
-                <td>{{ movie.content_id }}</td>
-                <td>{{ movie.title }}</td>
-                <td>{{ movie.release_year }}</td>
-                <td>{{ movie.content_type }}</td>
+                <td>{{ item.title }}</td>
+                <td>{{ item.release_year }}</td>
+                <td>{{ item.content_type }}</td>
+                <td>{{ "%.1f"|format(item.avg_rating|float) }}</td>
+                <td>{{ item.num_ratings }}</td>
                 <td>
                     {% if session.get('user_id') %}
                         <div style="display: flex; gap: 10px; align-items: center;">
-                            
-                            <!-- watchlist button -->
-                            <form action="/watchlist/add/{{ movie.content_id }}" method="POST">
+                            <form action="/watchlist/add/{{ item.content_id }}" method="POST">
                                 <button type="submit">+ Watch</button>
                             </form>
-
-                            <!-- rating form -->
-                            <form action="/rate/{{ movie.content_id }}" method="POST" style="display: flex;">
+                            <form action="/rate/{{ item.content_id }}" method="POST" style="display: flex;">
                                 <input type="number" name="rating" step="0.1" min="1" max="5" placeholder="1-5" style="width: 50px;" required>
                                 <button type="submit">Rate</button>
                             </form>
@@ -45,4 +42,45 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <hr style="margin-top: 40px;">
+
+    <h2>Recent Oscar Winners</h2>
+    {% if award_winners %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Release Year</th>
+                    <th>Award Year</th>
+                    <th>Award Category</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in award_winners %}
+                <tr>
+                    <td>{{ item.title }}</td>
+                    <td>{{ item.release_year }}</td>
+                    <td>{{ item.award_year }}</td>
+                    <td>{{ item.category }}</td>
+                    <td>
+                        {% if session.get('user_id') %}
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <form action="/watchlist/add/{{ item.content_id }}" method="POST">
+                                    <button type="submit">+ Watch</button>
+                                </form>
+                            </div>
+                        {% else %}
+                            <small>Login to interact</small>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No award-winning content found in the database.</p>
+    {% endif %}
+
 {% endblock %}

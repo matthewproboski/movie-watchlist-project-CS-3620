@@ -2,6 +2,18 @@
 
 {% block content %}
 <h1>My Dashboard</h1>
+ 
+<div style="background-color: #f8f9fa; padding: 15px; margin-bottom: 20px; border-radius: 5px; display: flex; gap: 30px;">
+    <div>
+        <strong>Total Watchlist Items:</strong>
+        <span style="font-size: 1.2em; color: #007bff;">{{ watchlist_count }}</span>
+    </div>
+    <div>
+        <strong>Your Average Rating:</strong>
+        <span style="font-size: 1.2em; color: #28a745;">{{ avg_rating }} / 5.0</span>
+    </div>
+</div>
+
 
 <div style="display: flex; gap: 20px;">
     
@@ -19,6 +31,11 @@
                         <form action="/watchlist/remove/{{ item.content_id }}" method="POST">
                             <button type="submit" style="background:red; color:white;">Remove</button>
                         </form>
+                        <form action="/rate/{{ item.content_id }}" method="POST" style="display: flex;">
+                                <input type="number" name="rating" step="0.1" min="1" max="5" placeholder="1-5" style="width: 50px;" required>
+                                <button type="submit">Rate</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
