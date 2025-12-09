@@ -29,6 +29,16 @@ def get_db_connection():
     except mysql.connector.Error as err:
         print(f"Error connecting to database: {err}")
         return None
+    
+# helper
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash("Please log in to perform this action.", "error")
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # homepage route
 @app.route('/')
@@ -154,15 +164,37 @@ def logout():
     flash("You have been logged out.", "info")
     return redirect(url_for('login'))
 
-# helper
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            flash("Please log in to perform this action.", "error")
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated_function
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    user_id = session['user_id']
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    if request.method == 'POST':
+        display_name = request.form['display_name']
+        bio = request.form['bio']
+        
+        query = """
+            INSERT INTO user_profiles (user_id, display_name, bio)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE 
+                display_name = VALUES(display_name), 
+                bio = VALUES(bio);
+        """
+        cursor.execute(query, (user_id, display_name, bio))
+        conn.commit()
+        
+        flash("Profile updated successfully!", "success")
+        return redirect(url_for('dashboard'))
+
+    cursor.execute("SELECT display_name, bio FROM user_profiles WHERE user_id = %s", (user_id,))
+    profile_data = cursor.fetchone()
+    
+    cursor.close()
+    conn.close()
+    
+    return render_template('profile.html', profile=profile_data)
 
 # --- interaction routes ---
 
@@ -247,6 +279,7 @@ def rate_content(content_id):
 def dashboard():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
+    user_id = session['user_id']
 
     watchlist_query = """
         SELECT c.* 
@@ -254,7 +287,7 @@ def dashboard():
         JOIN user_watchlist w ON c.content_id = w.content_id
         WHERE w.user_id = %s
     """
-    cursor.execute(watchlist_query, (session['user_id'],))
+    cursor.execute(watchlist_query, (user_id,))
     watchlist = cursor.fetchall()
 
     ratings_query = """
@@ -264,31 +297,33 @@ def dashboard():
         WHERE r.user_id = %s
         ORDER BY r.created_at DESC
     """
-    cursor.execute(ratings_query, (session['user_id'],))
+    cursor.execute(ratings_query, (user_id,))
     my_ratings = cursor.fetchall()
-
-    # analytical view #1: my states
-    # total items in watchlist using COUNT()
-    stats_watchlist_query = """
-        SELECT COUNT(*) as total_count 
-        FROM user_watchlist 
-        WHERE user_id = %s
-    """
-    cursor.execute(stats_watchlist_query, (session['user_id'],))
-    watchlist_count = cursor.fetchone()['total_count']
-
-    # average rating using AVG()
-    # COALESCE() handles NULLs
-    stats_rating_query = """
-        SELECT COALESCE(AVG(rating), 0) as average_rating 
-        FROM user_ratings 
-        WHERE user_id = %s
-    """
-    cursor.execute(stats_rating_query, (session['user_id'],))
-    avg_rating = cursor.fetchone()['average_rating']
     
-    # round it
+    stats_watchlist_query = "SELECT COUNT(*) as total_count FROM user_watchlist WHERE user_id = %s"
+    cursor.execute(stats_watchlist_query, (user_id,))
+    watchlist_count = cursor.fetchone()['total_count']
+    
+    stats_rating_query = "SELECT COALESCE(AVG(rating), 0) as average_rating FROM user_ratings WHERE user_id = %s"
+    cursor.execute(stats_rating_query, (user_id,))
+    avg_rating = cursor.fetchone()['average_rating']
     avg_rating = round(float(avg_rating), 1)
+
+    # get profile data in order to display on the dashboard
+    profile_query = "SELECT display_name, bio FROM user_profiles WHERE user_id = %s"
+    cursor.execute(profile_query, (user_id,))
+    user_profile = cursor.fetchone()
+
+    search_history_query = """
+        SELECT search_query 
+        FROM search_history 
+        WHERE user_id = %s 
+        GROUP BY search_query
+        ORDER BY MAX(searched_at) DESC 
+        LIMIT 5;
+    """
+    cursor.execute(search_history_query, (user_id,))
+    recent_searches = cursor.fetchall()
 
     cursor.close()
     conn.close()
@@ -297,7 +332,9 @@ def dashboard():
                            watchlist=watchlist, 
                            my_ratings=my_ratings,
                            watchlist_count=watchlist_count,
-                           avg_rating=avg_rating)
+                           avg_rating=avg_rating,
+                           profile=user_profile,
+                           recent_searches=recent_searches)
 
 @app.route('/search')
 def search():
@@ -309,6 +346,12 @@ def search():
         if not conn:
             return "Database connection failed", 500
         cursor = conn.cursor(dictionary=True)
+
+        # save the search query if the user is logged in
+        if 'user_id' in session:
+            log_query = "INSERT INTO search_history (user_id, search_query) VALUES (%s, %s)"
+            cursor.execute(log_query, (session['user_id'], search_query))
+            conn.commit()
 
         sql_query = """
             SELECT content_id, title, release_year, content_type

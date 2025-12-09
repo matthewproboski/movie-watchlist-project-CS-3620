@@ -1,7 +1,18 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<h1>My Dashboard</h1>
+<h1>
+    {% if profile and profile.display_name %}
+        {{ profile.display_name }}'s Dashboard
+    {% else %}
+        My Dashboard
+    {% endif %}
+</h1>
+{% if profile and profile.bio %}
+    <p style="background-color: #e9ecef; border-left: 4px solid #007bff; padding: 10px; font-style: italic;">
+        "{{ profile.bio }}"
+    </p>
+{% endif %}
  
 <div style="background-color: #f8f9fa; padding: 15px; margin-bottom: 20px; border-radius: 5px; display: flex; gap: 30px;">
     <div>
@@ -64,4 +75,18 @@
         {% endif %}
     </div>
 </div>
+
+<hr style="margin-top: 40px;">
+<h2>Your Recent Searches</h2>
+{% if recent_searches %}
+    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+        {% for search in recent_searches %}
+            <a href="{{ url_for('search', query=search.search_query) }}" style="background-color: #f0f0f0; padding: 5px 10px; border-radius: 15px; text-decoration: none; color: #333;">
+                {{ search.search_query }}
+            </a>
+        {% endfor %}
+    </div>
+{% else %}
+    <p>You haven't searched for anything yet.</p>
+{% endif %}
 {% endblock %}

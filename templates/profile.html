@@ -1,0 +1,14 @@
+{% extends "layout.html" %}
+
+{% block content %}
+    <h2>Edit Your Profile</h2>
+    <form method="POST" action="/profile">
+        <label for="display_name">Display Name:</label><br>
+        <input type="text" id="display_name" name="display_name" value="{{ profile.display_name if profile else '' }}"><br><br>
+        
+        <label for="bio">About Me:</label><br>
+        <textarea id="bio" name="bio" rows="4" style="width: 300px;">{{ profile.bio if profile else '' }}</textarea><br><br>
+        
+        <button type="submit">Save Profile</button>
+    </form>
+{% endblock %}

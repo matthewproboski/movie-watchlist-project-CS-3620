@@ -102,3 +102,20 @@ CREATE TABLE action_log (
     timestamp       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
 );
+
+-- `user_profiles` table: stores user profile data, is both optional and editable
+CREATE TABLE user_profiles (
+    user_id         INT PRIMARY KEY,
+    display_name    VARCHAR(50),
+    bio             TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+-- `search_history` table: logs user search history and analytics
+CREATE TABLE search_history (
+    history_id      INT AUTO_INCREMENT PRIMARY KEY,
+    user_id         INT NOT NULL,
+    search_query    VARCHAR(255) NOT NULL,
+    searched_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);

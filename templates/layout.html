@@ -23,6 +23,7 @@
         {% if session.get('user_id') %}
             <span style="color: #aaa; margin-right: 15px;">Hello, {{ session['email'] }}</span>
             <a href="/dashboard">Dashboard</a>
+            <a href="/profile">Profile</a>
             <a href="/logout">Logout</a>
         {% else %}
             <a href="/login">Login</a>
