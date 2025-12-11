@@ -48,7 +48,7 @@ A simple web application where users can create an account to browse a assortmen
 | **Access Control**      | Login required for all write actions via `@login_required`.                                                           |
 | **Error Handling**      | Python `try/except` blocks catch DB errors (like duplicate emails or invalid ratings).                                |
 ## Video Recording
-![video](https://youtu.be/FR0niecFyvs)
+https://youtu.be/FR0niecFyvs
 
 ## ER Diagram
 ![ER diagram of project](docs/ER_diagram.jpg)
