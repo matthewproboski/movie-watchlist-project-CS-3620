@@ -119,3 +119,39 @@ CREATE TABLE search_history (
     searched_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
+
+-- `content_reports` table: allows users to bring up issues with content
+CREATE TABLE content_reports (
+    report_id     INT AUTO_INCREMENT PRIMARY KEY,
+    user_id       INT NOT NULL,
+    content_id    INT NOT NULL,
+    reason        ENUM('Incorrect Info', 'Duplicate Entry', 'Inappropriate Content', 'Other') NOT NULL,
+    details       TEXT NULL,
+    status        ENUM('Pending', 'Resolved', 'Dismissed') NOT NULL DEFAULT 'Pending',
+    created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (content_id) REFERENCES content(content_id) ON DELETE CASCADE
+);
+
+-- `content_notes` table: allows users to add notes to content
+CREATE TABLE content_notes (
+    note_id       INT AUTO_INCREMENT PRIMARY KEY,
+    user_id       INT NOT NULL,
+    content_id    INT NOT NULL,
+    note_text     TEXT NOT NULL,
+    created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (content_id) REFERENCES content(content_id) ON DELETE CASCADE,
+    UNIQUE KEY uq_user_content_note (user_id, content_id) -- one note per content
+);
+
+-- `content_requests` table: allows users to request for content that is not in the database
+CREATE TABLE content_requests (
+    request_id      INT AUTO_INCREMENT PRIMARY KEY,
+    user_id         INT NOT NULL,
+    title           VARCHAR(255) NOT NULL,
+    status          ENUM('Pending', 'Added', 'Rejected') NOT NULL DEFAULT 'Pending',
+    requested_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);

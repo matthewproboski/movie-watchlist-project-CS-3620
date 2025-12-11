@@ -274,6 +274,91 @@ def rate_content(content_id):
 
     return redirect(request.referrer or url_for('index'))
 
+@app.route('/report/<int:content_id>', methods=['POST'])
+@login_required
+def report_content(content_id):
+    reason = request.form['reason']
+    details = request.form.get('details', '')
+
+    conn = get_db_connection()
+    if not conn:
+        flash("Database connection failed.", "error")
+        return redirect(request.referrer or url_for('index'))
+    
+    cursor = conn.cursor()
+    try:
+        query = """
+            INSERT INTO content_reports (user_id, content_id, reason, details)
+            VALUES (%s, %s, %s, %s)
+        """
+        cursor.execute(query, (session['user_id'], content_id, reason, details))
+        conn.commit()
+        flash("Report submitted successfully. Thank you for the feedback!", "success")
+    except mysql.connector.Error as err:
+        flash(f"An error occurred while submitting your report: {err}", "error")
+        conn.rollback()
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect(request.referrer or url_for('index'))
+
+@app.route('/notes/save/<int:content_id>', methods=['POST'])
+@login_required
+def save_note(content_id):
+    note_text = request.form['note_text']
+    user_id = session['user_id']
+
+    conn = get_db_connection()
+    if not conn:
+        flash("Database connection failed.", "error")
+        return redirect(url_for('dashboard'))
+    
+    cursor = conn.cursor()
+    try:
+        query = """
+            INSERT INTO content_notes (user_id, content_id, note_text)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE note_text = VALUES(note_text)
+        """
+        cursor.execute(query, (user_id, content_id, note_text))
+        conn.commit()
+        flash("Note saved!", "success")
+    except mysql.connector.Error as err:
+        flash(f"An error occurred while saving your note: {err}", "error")
+        conn.rollback()
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect(url_for('dashboard'))
+
+@app.route('/request', methods=['POST'])
+@login_required
+def request_content():
+    title = request.form['title']
+    user_id = session['user_id']
+
+    conn = get_db_connection()
+    if not conn:
+        flash("Database connection failed.", "error")
+        return redirect(url_for('search'))
+    
+    cursor = conn.cursor()
+    try:
+        query = "INSERT INTO content_requests (user_id, title) VALUES (%s, %s)"
+        cursor.execute(query, (user_id, title))
+        conn.commit()
+        flash(f"Your request for '{title}' has been submitted!", "success")
+    except mysql.connector.Error as err:
+        flash(f"An error occurred: {err}", "error")
+        conn.rollback()
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect(url_for('search'))
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -282,10 +367,17 @@ def dashboard():
     user_id = session['user_id']
 
     watchlist_query = """
-        SELECT c.* 
-        FROM content c
-        JOIN user_watchlist w ON c.content_id = w.content_id
-        WHERE w.user_id = %s
+        SELECT 
+            c.*,
+            n.note_text
+        FROM 
+            user_watchlist w
+        JOIN 
+            content c ON w.content_id = c.content_id
+        LEFT JOIN
+            content_notes n ON w.user_id = n.user_id AND w.content_id = n.content_id
+        WHERE 
+            w.user_id = %s
     """
     cursor.execute(watchlist_query, (user_id,))
     watchlist = cursor.fetchall()
@@ -325,6 +417,29 @@ def dashboard():
     cursor.execute(search_history_query, (user_id,))
     recent_searches = cursor.fetchall()
 
+    # get the users reports
+    reports_query = """
+        SELECT r.reason, r.status, r.created_at, c.title
+        FROM content_reports r
+        JOIN content c ON r.content_id = c.content_id
+        WHERE r.user_id = %s
+        ORDER BY r.created_at DESC
+        LIMIT 5;
+    """
+    cursor.execute(reports_query, (user_id,))
+    my_reports = cursor.fetchall()
+
+    # content requests
+    requests_query = """
+        SELECT title, status, requested_at
+        FROM content_requests
+        WHERE user_id = %s
+        ORDER BY requested_at DESC
+        LIMIT 5;
+    """
+    cursor.execute(requests_query, (user_id,))
+    my_requests = cursor.fetchall()
+
     cursor.close()
     conn.close()
     
@@ -334,7 +449,9 @@ def dashboard():
                            watchlist_count=watchlist_count,
                            avg_rating=avg_rating,
                            profile=user_profile,
-                           recent_searches=recent_searches)
+                           recent_searches=recent_searches,
+                           my_reports=my_reports,
+                           my_requests=my_requests)
 
 @app.route('/search')
 def search():

@@ -47,6 +47,15 @@
             </table>
         {% else %}
             <p>No results found for '{{ search_query }}'.</p>
+            {% if session.get('user_id') %}
+                <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+                    <p>Didn't find what you were looking for?</p>
+                    <form action="{{ url_for('request_content') }}" method="POST">
+                        <input type="hidden" name="title" value="{{ search_query }}">
+                        <button type="submit">Request '{{ search_query }}' to be added</button>
+                    </form>
+                </div>
+            {% endif %}
         {% endif %}
     {% endif %}
 

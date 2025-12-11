@@ -33,11 +33,17 @@
         <h2>My Watchlist</h2>
         {% if watchlist %}
             <table>
-                <tr><th>Title</th><th>Type</th><th>Action</th></tr>
+                <tr><th>Title</th><th>Type</th><th>My Notes</th><th>Action</th></tr>
                 {% for item in watchlist %}
                 <tr>
                     <td>{{ item.title }}</td>
                     <td>{{ item.content_type }}</td>
+                    <td>
+                        <form action="/notes/save/{{ item.content_id }}" method="POST">
+                            <textarea name="note_text" rows="2" style="width: 100%;">{{ item.note_text if item.note_text else '' }}</textarea>
+                            <button type="submit" style="width: 100%; margin-top: 5px;">Save Note</button>
+                        </form>
+                    </td>
                     <td>
                         <form action="/watchlist/remove/{{ item.content_id }}" method="POST">
                             <button type="submit" style="background:red; color:white;">Remove</button>
@@ -88,5 +94,55 @@
     </div>
 {% else %}
     <p>You haven't searched for anything yet.</p>
+{% endif %}
+<hr style="margin-top: 40px;">
+<h2>Your Recent Reports</h2>
+{% if my_reports %}
+    <table>
+        <thead>
+            <tr>
+                <th>Content Title</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th>Reported On</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for report in my_reports %}
+            <tr>
+                <td>{{ report.title }}</td>
+                <td>{{ report.reason }}</td>
+                <td>{{ report.status }}</td>
+                <td>{{ report.created_at.strftime('%Y-%m-%d') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>You haven't submitted any reports yet.</p>
+{% endif %}
+<hr style="margin-top: 40px;">
+<h2>Your Content Requests</h2>
+{% if my_requests %}
+    <table>
+        <thead>
+            <tr>
+                <th>Requested Title</th>
+                <th>Status</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for req in my_requests %}
+            <tr>
+                <td>{{ req.title }}</td>
+                <td>{{ req.status }}</td>
+                <td>{{ req.requested_at.strftime('%Y-%m-%d') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>You haven't requested any content yet.</p>
 {% endif %}
 {% endblock %}

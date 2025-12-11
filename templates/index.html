@@ -33,6 +33,14 @@
                                 <input type="number" name="rating" step="0.1" min="1" max="5" placeholder="1-5" style="width: 50px;" required>
                                 <button type="submit">Rate</button>
                             </form>
+                            <form action="/report/{{ item.content_id }}" method="POST" style="display: flex;">
+                                <select name="reason" required>
+                                    <option value="Incorrect Info">Incorrect Info</option>
+                                    <option value="Duplicate Entry">Duplicate Entry</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                                <button type="submit">Report</button>
+                            </form>
                         </div>
                     {% else %}
                         <small>Login to interact</small>
